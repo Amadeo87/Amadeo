@@ -430,27 +430,92 @@
             document.getElementById('recommendedAction').textContent = ESTIMATES[stage].action[practice];
         }
         updateCalcEstimate();
-
-        // TODO: замінити alert на реальну відправку, напр.:
-        // fetch('/api/lead', { method: 'POST', body: new FormData(e.target) })
-        function handleCalcSubmit(e) {
-            e.preventDefault();
-            alert('Дякуємо! Заявку прийнято. Ми зв’яжемося з вами найближчим часом.');
-            e.target.reset();
-            updateCalcEstimate();
+// ФУНКЦИЯ ОТПРАВКИ В TELEGRAM
+    async function sendToTelegram(text) {
+        const TELEGRAM_BOT_TOKEN = '8869370561:AAGXv6Hnu-LnxQtQymMz4RRTVll3GJ9Z7v0';
+        const TELEGRAM_CHAT_ID = '828323360';
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: TELEGRAM_CHAT_ID,
+                    text: text,
+                    parse_mode: 'HTML'
+                })
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('Помилка відправки:', error);
+            return false;
         }
+    }
+// ОБРАБОТКА ФОРМЫ КАЛЬКУЛЯТОРА
+async function handleCalcSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Надсилання...';
 
-        function handleModalSubmit(e) {
-            e.preventDefault();
-            alert('Дякуємо за звернення! Ми зателефонуємо вам найближчим часом.');
-            closeModal();
-            e.target.reset();
-        }
-    <script>
-    // === НАСТРОЙКИ TELEGRAM ===
-    const TELEGRAM_BOT_TOKEN = '8869370561:AAGXv6Hnu-LnxQtQymMz4RRTVll3GJ9Z7v0';
-    const TELEGRAM_CHAT_ID = '828323360';
+  const practiceText = form.practice.options[form.practice.selectedIndex].text;
+  const stageVal = form.stage.value;
+  const name = form.name.value;
+  const phone = form.phone.value;
 
-    const PRACTICES = [
-</body>
-</html>
+  // Формируем корректное сообщение с переменными (значок находится внутри кавычек)
+ const message = `<b>НОВА ЗАЯВКА З КАЛЬКУЛЯТОРА</b>\n\n` +
+    `<b>Практика:</b> ${practiceText}\n` +
+    `<b>Етап:</b> ${stageVal}\n` +
+    `<b>Ім'я:</b> ${name}\n` +
+    `<b>Телефон:</b> ${phone}`;
+
+  const success = await sendToTelegram(message);
+
+  if (success) {
+    alert('Дякуємо! Заявку прийнято. Ми зв’яжемося з вами найближчим часом.');
+    form.reset();
+    updateCalcEstimate();
+  } else {
+    alert('Помилка при надсиланні. Перевірте з’єднання.');
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Отримати детальну оцінку справи';
+} // Закрывающая скобка первой функции
+
+// ОБРАБОТКА МОДАЛЬНОЙ ФОРМЫ
+async function handleModalSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Надсилання...';
+
+  const practice = form.practice.value;
+  const name = form.name.value;
+  const phone = form.phone.value;
+  const msg = form.message.value || 'Не вказано';
+
+  // Формируем корректное сообщение для Telegram
+  const message = `<b>НОВЕ ЗВЕРНЕННЯ З МОДАЛЬНОЇ ФОРМИ</b>\n\n` +
+    `<b>Практика:</b> ${practice}\n` +
+    `<b>Ім'я:</b> ${name}\n` +
+    `<b>Телефон:</b> ${phone}\n` +
+    `<b>Повідомлення:</b> ${msg}`;
+
+  const success = await sendToTelegram(message);
+
+  if (success) {
+    alert('Дякуємо за звернення! Ми зателефонуємо вам найближчим часом.');
+    closeModal();
+    form.reset();
+  } else {
+    alert('Помилка при надсиланні. Перевірте з’єднання.');
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Надіслати запит';
+}
